@@ -66,15 +66,15 @@ This reduces execution time.
 
 using namespace std;
 
-void bubbleSort(int arr[], int n) {
-
-    for (int i = 0; i < n - 1; i++) {
-
-        #pragma omp parallel for
-        for (int j = 0; j < n - i - 1; j++) {
-
-            if (arr[j] > arr[j + 1]) {
-
+// Regular Bubble Sort Function
+void bubbleSort(int arr[], int start, int end)
+{
+    for(int i = start; i < end; i++)
+    {
+        for(int j = start; j < end - (i - start); j++)
+        {
+            if(arr[j] > arr[j + 1])
+            {
                 int temp = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
@@ -83,16 +83,86 @@ void bubbleSort(int arr[], int n) {
     }
 }
 
-int main() {
+// Merge Two Sorted Parts
+void merge(int arr[], int low, int mid, int high)
+{
+    int n1 = mid - low + 1;
+    int n2 = high - mid;
 
-    int arr[] = {5, 1, 4, 2, 8};
-    int n = 5;
+    int left[n1], right[n2];
 
-    bubbleSort(arr, n);
+    // Copy data
+    for(int i = 0; i < n1; i++)
+        left[i] = arr[low + i];
 
-    cout << "Sorted Array: ";
+    for(int j = 0; j < n2; j++)
+        right[j] = arr[mid + 1 + j];
 
-    for (int i = 0; i < n; i++) {
+    int i = 0, j = 0, k = low;
+
+    // Merge arrays
+    while(i < n1 && j < n2)
+    {
+        if(left[i] <= right[j])
+        {
+            arr[k] = left[i];
+            i++;
+        }
+        else
+        {
+            arr[k] = right[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Remaining elements
+    while(i < n1)
+    {
+        arr[k] = left[i];
+        i++;
+        k++;
+    }
+
+    while(j < n2)
+    {
+        arr[k] = right[j];
+        j++;
+        k++;
+    }
+}
+
+int main()
+{
+    int arr[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 0};
+
+    int n = 10;
+
+    int mid = n / 2;
+
+    // Parallel Region
+    #pragma omp parallel sections
+    {
+        // Thread 1 sorts first half
+        #pragma omp section
+        {
+            bubbleSort(arr, 0, mid - 1);
+        }
+
+        // Thread 2 sorts second half
+        #pragma omp section
+        {
+            bubbleSort(arr, mid, n - 1);
+        }
+    }
+
+    // Merge both sorted halves
+    merge(arr, 0, mid - 1, n - 1);
+
+    cout << "Sorted Array:\n";
+
+    for(int i = 0; i < n; i++)
+    {
         cout << arr[i] << " ";
     }
 
